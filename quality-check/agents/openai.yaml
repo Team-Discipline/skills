@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quality Check"
+  short_description: "변경분·최근 커밋·전체 코드 품질을 점검합니다"
+  default_prompt: "Use $quality-check to inspect this repository and report concise Korean code quality findings."
