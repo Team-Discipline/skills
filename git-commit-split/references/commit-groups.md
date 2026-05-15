@@ -1,8 +1,84 @@
 # Commit Group Heuristics
 
-- Move/rename source files -> refactor
-- Entry points (Docker, scripts) -> build
-- README/AGENTS updates -> docs
-- CI configs/workflows -> ci
-- Tooling/assistant configs -> chore
-- License changes -> chore
+커밋 그룹화의 기준은 **파일 유형이 아니라 의존성과 의도**다.
+
+## Narrative Steps (4-Stage Model)
+
+커밋은 다음 순서로 쌓는다:
+
+```
+1. Prep     — 기반 작업 (rename, move, config, lint)
+2. Core     — 실제 변경 (feature, refactor, API change)
+3. Fix      — Core 중 발견한 버그 수정
+4. Polish   — 테스트 보강, docs, cleanup
+```
+
+### Prep
+- Rename / move / restructure
+- Import path 정리
+- 린트 규칙 적용, 포매팅
+- 빌드/CI 설정
+- *Why first:* 이후 변경이 깨끗한 기반 위에서 이루어지도록
+
+### Core
+- 새 기능 구현 (`feat`)
+- 기존 동작을 유지하는 리팩터링 (`refactor`)
+- API 시그니처 변경
+- 의존성 업데이트 (실제 기능 변경이 있을 때)
+- *Rules:*
+  - 하나의 Core 커밋은 **하나의 논리적 변경**만 담는다
+  - 함수 시그니처 변경 + 모든 호출처 수정 = **같은 커밋**
+  - 타입 정의 변경 + 해당 타입 사용처 = **같은 커밋**
+
+### Fix
+- Core 작업 중 발견한 기존 버그
+- Fix는 발견된 그 자리에서 **즉시 커밋** (나중으로 미루지 않음)
+- Fix + 그 fix를 검증하는 테스트 = **같은 커밋** (`fix:` 타입)
+
+### Polish
+- Core 기능에 대한 테스트 추가 (`test:`)
+- README / 문서 업데이트 (`docs:`)
+- 사용하지 않는 import/코드 정리 (`chore:`)
+- *Why last:* 기능이 완성된 후에 문서와 테스트를 작성해야 내용이 정확함
+
+## Dependency Rules
+
+### 같은 커밋에 묶어야 하는 경우
+
+| 상황 | 예시 | 이유 |
+|------|------|------|
+| 인터페이스 변경 + 모든 구현체 | `AbstractRepository`에 메서드 추가 + 모든 구현 클래스 | 중간 커밋에서 컴파일/런타임 에러 방지 |
+| 타입 정의 변경 + 모든 사용처 | `User` 타입에 필드 추가 + 이 필드를 참조하는 모든 코드 | 타입 불일치 방지 |
+| 새 함수 도입 + 첫 호출 | `validate_email()` 추가 + 회원가입 로직에서 호출 | dead code 방지 |
+| 버그픽스 + 해당 테스트 | `handle_empty()` 수정 + `test_handle_empty()` | fix 검증 가능성 |
+| Config 변경 + 그 config를 읽는 코드 | 새 env var 추가 + 그 값을 읽는 초기화 로직 | 설정 불일치 방지 |
+
+### 반드시 분리해야 하는 경우
+
+| 상황 | 예시 | 이유 |
+|------|------|------|
+| 서로 다른 기능 | 사용자 프로필 페이지 + 결제 로직 변경 | 각각 독립적으로 revert 가능해야 함 |
+| 리팩터링 + 기능 변경 | 함수 이름 변경 + 새 파라미터 추가 | 리팩터링만 revert해서 기능을 유지할 수 있어야 함 |
+| 포매팅만 한 파일 + 실제 로직 변경 | 린트 수정된 파일과 새 기능 파일 | 포매팅 노이즈와 실제 변경을 분리 |
+| 의존성이 없는 독립 변경 | `README.md` 수정 + `Dockerfile` 수정 | 서로 영향이 없으므로 분리해도 무방 |
+
+## Conflict Detection
+
+두 그룹이 같은 파일을 건드리면 다음을 확인:
+
+1. **같은 함수인가?** → 같은 함수를 두 그룹이 모두 수정하면 반드시 병합
+2. **다른 함수지만 같은 파일인가?** → 가능하면 같은 커밋 (파일 단위 충돌 방지)
+3. **다른 파일이지만 import 체인이 있는가?** → import 한 쪽이 먼저 커밋되어야 함
+
+## Self-Contained Commit Test
+
+각 커밋을 제안하기 전에 스스로에게 물을 것:
+
+```
+1. 이 커밋만 checkout 해도 프로젝트가 동작하는가?
+2. 이 커밋에 포함되지 않은 변경에 의존하고 있지 않은가?
+3. 이 커밋을 revert해도 다른 커밋이 깨지지 않는가?
+4. 이 커밋의 변경 의도를 한 문장으로 설명할 수 있는가?
+```
+
+하나라도 "아니오"면 그룹을 다시 조정한다.
