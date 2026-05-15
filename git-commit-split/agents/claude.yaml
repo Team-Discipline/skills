@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Commit Split"
+  short_description: "Group file changes by meaning and create small, focused git commits with clear messages"
+  default_prompt: "Use $git-commit-split to split uncommitted changes into logical, well-structured git commits."

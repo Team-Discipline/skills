@@ -1,107 +1,113 @@
 ---
 name: quality-check
-description: Repository code quality inspection workflow. Use when Codex must review a repository's code quality, inspect only changed files from git status, inspect the last N commits, perform a full repository audit, run existing test/lint/typecheck tools, produce concise Korean findings, recommend test additions or refactors without implementing them, or ask the user about unclear design decisions in changed work.
+description: Repository code quality inspection workflow. Reviews changed files from git status, inspects recent N commits, or performs a full repository audit. Runs existing test/lint/typecheck tools and produces concise findings. Does not modify code. Does not add tests — only recommends them.
+license: MIT
+compatibility: Requires git
+metadata:
+  author: Team-Discipline
+  version: "1.0"
 ---
 
 # Quality Check
 
-저장소 코드 품질을 점검하고 한국어로 짧고 실행 가능한 결과를 낸다. 코드 수정, 리팩토링, 테스트 추가는 하지 않는다.
+## Report Language
 
-## 원칙
+BEFORE GENERATING ANY REPORT: You MUST ask the user:
 
-- 항상 한국어로 답한다. 인사, 장황한 배경 설명, 일반론을 생략한다.
-- 전문 용어를 사용해 토큰을 아낀다. 단, 복붙 가능한 수준으로 구체화한다.
-- 기존 테스트/린트/타입체크/포매터/CI 스크립트가 있으면 우선 사용한다.
-- 저장소 패턴을 먼저 읽고, 언어/프레임워크/패키지 매니저별 표준 도구를 추론한다.
-- 결론은 버그, 회귀 위험, 결합도, 테스트 공백, 유지보수성 순으로 우선순위를 둔다.
-- 이해 가능한 구현 의도는 추론해서 적는다. 디자인 패턴/시스템 설계 관점에서 의도가 불명확하면 반드시 사용자에게 질문한다.
-- 테스트 보강은 지시문만 작성한다. 테스트 코드를 직접 작성하지 않는다.
-- 리팩토링은 방향만 권고한다. 리팩토링 패치를 만들지 않는다.
+> "Write the report in Korean or English?"
 
-## 0. Git 확인
+Wait for their response. Do not default to any language. Do not proceed without an explicit answer.
 
-먼저 `command -v git`로 git 설치 여부를 확인한다.
+## Principles
 
-- git이 있으면 `git rev-parse --show-toplevel`로 루트를 확정하고 이동한다.
-- git이 없으면 작업을 멈추고 사용자에게 묻는다: "git이 없어 변경분 판별이 불가합니다. 전수조사로 진행할까요, 취소할까요?"
-- git 저장소가 아니면 사용자에게 묻는다: "git 저장소가 아닙니다. 전수조사로 진행할까요, 취소할까요?"
+- Answer in the language the user chose for the report. Skip greetings, background, and generalities.
+- Use precise terminology to save tokens, but be specific enough to copy-paste.
+- If existing test/lint/typecheck/format/CI scripts exist, run them first.
+- Read repository patterns first, then infer standard tools by language/framework/package manager.
+- Prioritize findings: bugs, regression risk, coupling, test gaps, maintainability.
+- If implementation intent is unclear from design-pattern or system-design viewpoint, you MUST ask the user.
+- For test gaps: write instructions only. Do not write test code.
+- For refactoring: recommend direction only. Do not create refactoring patches.
 
-fish 사용 환경에서는 터미널 스크립트를 fish 문법으로 작성한다.
+## 0. Git Check
 
-```fish
+Check that git is available:
+
+```bash
 command -v git
 git rev-parse --show-toplevel
-git status --short
 ```
 
-## 1. 모드 선택
+- If git is missing: stop and ask: "Git is not available. Cannot detect changes. Proceed with full audit, or cancel?"
+- If not a git repo: ask: "This is not a git repository. Proceed with full audit, or cancel?"
 
-사용자가 명시하면 그 모드를 따른다.
+## 1. Mode Selection
 
-- 부분모드: git worktree 변경분 리뷰, PR 리뷰, "바뀐 것만" 요청 시 사용한다.
-- 최근 커밋 모드: "최근 n개 커밋", "마지막 n개 커밋", "최근 작업 이력" 요청 시 사용한다.
-- 전수조사 모드: 전체 코드베이스 감사, 품질 진단, "전부", "저장소 전체" 요청 시 사용한다.
-- 모드가 불명확하면 기본은 부분모드다. 단, 변경분이 없으면 전수조사 진행 여부를 묻는다.
+Use the mode the user explicitly requests.
 
-## 2. 부분모드
+- **Partial mode**: git worktree changes, PR review, "only what changed."
+- **Recent commits mode**: "last N commits," "recent work history."
+- **Full audit mode**: entire codebase, "everything," "whole repo."
+- If mode is unclear, default to partial. If no changes exist, ask whether to proceed with full audit.
 
-`git status --short`로 대상 파일을 확정한다.
+## 2. Partial Mode
+
+Use `git status --short` to identify target files.
 
 - staged: `git diff --cached -- <file>`
 - unstaged: `git diff -- <file>`
-- untracked: 파일 전체를 읽되 주변 의존성만 최소 추적한다.
-- rename/delete: 호출부, import/export, 빌드 설정까지 영향 범위를 확인한다.
+- untracked: read the full file, track only minimal dependencies.
+- rename/delete: check call sites, imports/exports, build config up to impact boundary.
 
-검사 범위는 변경 파일과 직접 영향 받는 계약(interface, schema, route, public API, migration, config)에 한정한다. 저장소 전체 리팩토링 제안으로 확장하지 않는다.
+Scope is limited to changed files + directly affected contracts (interface, schema, route, public API, migration, config). Do not expand into repo-wide refactoring suggestions.
 
-실행할 도구:
+Run tools:
 
-- 변경 언어의 기존 테스트/린트/타입체크 스크립트
-- 변경 파일 단위 실행이 가능하면 우선 파일 단위로 실행
-- 파일 단위가 불가하면 관련 패키지/모듈 단위로 실행
-- 도구가 없으면 정적 읽기 기반으로 한계를 명시
+- Existing test/lint/typecheck scripts for the changed language.
+- Run per-file if possible, per-module if not.
+- If no tools exist, note the limitation based on static reading.
 
-결과 형식:
+Output format:
 
 ```markdown
-**검사 결과**
-- [P1/P2/P3] 파일:라인 - 문제. 원인. 수정 지시문.
+**Findings**
+- [P1/P2/P3] file:line - issue. cause. fix instruction.
 
-**테스트 보강 지시문**
-- 파일/시나리오: 어떤 경계값, 실패 경로, 회귀 케이스를 추가할지.
+**Test Gap Instructions**
+- file/scenario: what boundary values, failure paths, regression cases to add.
 
-**리팩토링 권고**
-- 대상: 구조적 문제와 권장 방향. 패치는 만들지 않음.
+**Refactoring Suggestions**
+- target: structural issue and recommended direction. No patches.
 
-**질문**
-- 설계 의도 확인이 필요한 지점만 작성.
+**Questions**
+- Only items needing design-intent clarification.
 
-**검증**
-- 실행한 명령과 결과 요약.
+**Verification**
+- Commands run and result summary.
 ```
 
-문제가 없으면 "중대 이슈 없음"이라고 쓰고, 잔여 리스크와 미실행 검증만 짧게 적는다.
+If no issues found: state "No critical issues" and briefly note residual risks and unrun checks.
 
-## 3. 최근 커밋 모드
+## 3. Recent Commits Mode
 
-최근 n개의 커밋을 기준으로 이미 커밋된 변경분을 점검한다. git worktree의 미커밋 변경분은 기본 제외하고, 존재하면 "미커밋 변경분은 제외했습니다"라고 명시한다.
+Inspect already-committed changes in the last N commits. Exclude uncommitted worktree changes by default. If uncommitted changes exist, state: "Excluding uncommitted changes."
 
-n 결정:
+Determining N:
 
-- 사용자가 n을 명시하면 그대로 사용한다.
-- n이 없으면 사용자에게 묻는다: "최근 몇 개 커밋을 검사할까요?"
-- n은 양의 정수만 허용한다. 범위가 비현실적으로 크면 전수조사 모드를 권고한다.
+- Use N if the user specified it.
+- If N is missing, ask: "How many recent commits should I inspect?"
+- N must be a positive integer. If unrealistically large, recommend full audit mode.
 
-기준 범위:
+Scope:
 
-- 기본 범위는 `HEAD~n..HEAD`다.
-- 커밋 수가 n보다 작으면 가능한 최초 커밋부터 `HEAD`까지 검사한다.
-- merge commit이 많고 사용자가 작업 흐름 중심 리뷰를 원하면 `--first-parent` 기준을 제안한다.
-- 특정 브랜치/태그/커밋 기준이 주어지면 `base..target`으로 대체한다.
+- Default: `HEAD~n..HEAD`
+- If fewer commits exist, inspect from the earliest available commit to HEAD.
+- If many merge commits and user wants workflow-oriented review, suggest `--first-parent`.
+- If a specific branch/tag/commit is given, use `base..target`.
 
-fish 예시:
+Commands:
 
-```fish
+```bash
 set n 5
 git log --oneline -n $n
 git diff --name-status HEAD~$n..HEAD
@@ -109,133 +115,133 @@ git diff --stat HEAD~$n..HEAD
 git diff HEAD~$n..HEAD -- <file>
 ```
 
-검사 절차:
+Procedure:
 
-1. `git log --oneline -n <n>`로 커밋 목록과 의도를 요약한다.
-2. `git diff --name-status <base>..HEAD`로 대상 파일을 확정한다.
-3. 커밋별로 분리해야 의미가 살아나는 변경은 `git show --stat --name-status <sha>`와 `git show <sha> -- <file>`을 사용한다.
-4. 파일 단위보다 커밋 단위 의도가 중요하면 커밋별 finding을 먼저 쓰고, 파일/라인을 하위 근거로 둔다.
-5. 변경 범위와 직접 영향 받는 계약(interface, schema, route, public API, migration, config)을 확인한다.
-6. 기존 테스트/린트/타입체크 도구를 범위에 맞게 실행한다.
+1. `git log --oneline -n <n>` to summarize commits and intent.
+2. `git diff --name-status <base>..HEAD` to identify target files.
+3. For commits that need per-commit separation: `git show --stat --name-status <sha>` and `git show <sha> -- <file>`.
+4. If commit-level intent matters more than file-level: write findings per commit first, then file/line as sub-evidence.
+5. Check scope + directly affected contracts (interface, schema, route, public API, migration, config).
+6. Run existing test/lint/typecheck tools on the scope.
 
-결과 형식:
+Output format:
 
 ```markdown
-**검사 범위**
-- 커밋: <base>..HEAD
-- 대상: 주요 파일/모듈
-- 제외: 미커밋 변경분, generated/vendor 등
+**Scope**
+- commits: <base>..HEAD
+- targets: key files/modules
+- excluded: uncommitted changes, generated/vendor
 
-**커밋 요약**
-- <sha> - 의도/영향
+**Commit Summary**
+- <sha> - intent/impact
 
-**검사 결과**
-- [P1/P2/P3] 파일:라인 - 문제. 원인. 수정 지시문.
+**Findings**
+- [P1/P2/P3] file:line - issue. cause. fix instruction.
 
-**테스트 보강 지시문**
-- 커밋/파일/시나리오: 추가해야 할 회귀 테스트.
+**Test Gap Instructions**
+- commit/file/scenario: regression tests to add.
 
-**리팩토링 권고**
-- 대상: 구조적 문제와 권장 방향. 패치는 만들지 않음.
+**Refactoring Suggestions**
+- target: structural issue and recommended direction. No patches.
 
-**질문**
-- 커밋 의도 또는 설계 의도 확인이 필요한 지점만 작성.
+**Questions**
+- Only items needing commit-intent or design-intent clarification.
 
-**검증**
-- 실행한 명령과 결과 요약.
+**Verification**
+- Commands run and result summary.
 ```
 
-주의:
+Caveats:
 
-- 커밋 히스토리 자체를 수정하지 않는다. rebase, amend, reset을 수행하지 않는다.
-- 커밋 메시지 품질 평가는 요청이 있을 때만 포함한다.
-- 여러 커밋이 동일 결함을 만들고 이후 커밋이 고쳤다면 최종 상태 기준 finding으로 중복 보고하지 말고 "중간 커밋 리스크"로만 언급한다.
-- 최종 `HEAD` 상태에서 재현되지 않는 문제는 배포/릴리스 절차상 중간 커밋이 실행될 수 있을 때만 높은 우선순위로 둔다.
+- Do NOT modify commit history. No rebase, amend, or reset.
+- Include commit message quality assessment only when requested.
+- If multiple commits introduce the same defect and a later commit fixes it: report based on final state, avoid duplicate findings. Mention as "intermediate commit risk" only.
+- Issues not reproducible at HEAD: only flag as high-priority if intermediate commits could have been deployed/released.
 
-## 4. 전수조사 모드
+## 4. Full Audit Mode
 
-저장소 루트에 마크다운 보고서를 만든다. 기본 파일명은 `QUALITY_CHECK.md`다. 기존 파일이 있으면 덮어쓰기 전에 사용자에게 확인한다.
+Create a markdown report at the repository root. Default filename: `QUALITY_CHECK.md`. If the file already exists, ask before overwriting.
 
-대상 선별:
+Target selection:
 
-- `git ls-files` 기준으로 추적 파일을 나열한다.
-- 명백한 코드가 아닌 파일, lockfile, vendored/generated/build artifact, 대용량 바이너리는 제외한다.
-- untracked라도 source/test/config로 보이는 파일은 별도 섹션에 포함한다.
-- 모노레포면 패키지/앱/서비스 단위로 나눈다.
-- 일반 저장소면 최상위 폴더별로 나눈다.
+- List tracked files with `git ls-files`.
+- Exclude: non-code files, lockfiles, vendored/generated/build artifacts, large binaries.
+- Include untracked source/test/config files in a separate section.
+- Monorepo: break down by package/app/service.
+- Standard repo: break down by top-level directory.
 
-폴더별 절차:
+Per-directory procedure:
 
-1. 역할과 진입점 파악
-2. 공개 계약과 데이터 흐름 파악
-3. 오류 처리, 경계값, 동시성, 보안, 리소스 수명, 타입 안정성 점검
-4. 테스트 커버리지와 변경 가능성 평가
-5. 기존 도구 실행 결과 반영
-6. 폴더별 finding, 테스트 보강 지시문, 리팩토링 권고 작성
+1. Understand role and entry points.
+2. Understand public contracts and data flow.
+3. Check error handling, edge cases, concurrency, security, resource lifetime, type safety.
+4. Evaluate test coverage and change risk.
+5. Incorporate existing tool results.
+6. Write per-directory findings, test gap instructions, refactoring suggestions.
 
-보고서 양식:
+Report template:
 
 ```markdown
 # Quality Check
 
-## 요약
-- 전체 판단:
-- 핵심 리스크:
-- 실행한 검증:
+## Summary
+- Overall assessment:
+- Key risks:
+- Verification run:
 
-## 검사 범위
-- 포함:
-- 제외:
+## Scope
+- Included:
+- Excluded:
 
 ## Findings
-- [P1/P2/P3] 경로:라인 - 문제. 영향. 수정 지시문.
+- [P1/P2/P3] path:line - issue. impact. fix instruction.
 
-## 테스트 보강 지시문
-- 경로/모듈: 추가해야 할 테스트 시나리오.
+## Test Gap Instructions
+- path/module: test scenarios to add.
 
-## 리팩토링 권고
-- 경로/모듈: 구조적 문제와 권장 방향.
+## Refactoring Suggestions
+- path/module: structural issue and recommended direction.
 
-## 설계 질문
-- 질문과 필요한 의사결정.
+## Design Questions
+- Question and decision needed.
 
-## 폴더별 메모
-- 경로: 관찰, 리스크, 검증 상태.
+## Per-Directory Notes
+- path: observations, risks, verification status.
 ```
 
-보고서를 만든 뒤 파일을 다시 읽어 다음을 자체 점검한다.
+After creating the report, re-read it and self-check:
 
-- finding에 파일/라인/영향/수정 지시문이 있는지
-- 테스트 보강이 실제 테스트 코드 작성이 아니라 지시문인지
-- 리팩토링 권고가 패치가 아니라 방향 제시인지
-- 설계 질문이 추론 불가한 항목에만 있는지
-- 실행한 명령과 미실행 사유가 기록됐는지
+- Does every finding have file/line/impact/fix instruction?
+- Are test instructions really instructions, not actual test code?
+- Are refactoring suggestions directional, not patches?
+- Are design questions limited to items that cannot be inferred?
+- Are executed commands and skipped items documented?
 
-## 판단 기준
+## Judgment Criteria
 
-우선순위:
+Priority:
 
-- P1: 런타임 크래시, 데이터 손실, 보안 취약점, 명백한 배포 차단
-- P2: 주요 경로 회귀, 테스트 누락으로 재발 가능성이 큰 결함, API 계약 위반
-- P3: 유지보수성, 결합도, 중복, 사소한 타입/경계값 리스크
+- P1: runtime crash, data loss, security vulnerability, clear release blocker.
+- P2: major-path regression, defect likely to recur due to missing tests, API contract violation.
+- P3: maintainability, coupling, duplication, minor type/edge-case risk.
 
-테스트 보강 후보:
+Test gap candidates:
 
-- 변경 가능성이 높은 정책/도메인 로직
-- public API, serializer/parser, auth, billing, migration, async workflow
-- 과거 결함이 재발하기 쉬운 조건분기
-- mocking 없이도 계약 테스트가 가능한 경계
+- High-change-probability policy/domain logic.
+- Public API, serializer/parser, auth, billing, migration, async workflow.
+- Condition branches where past defects recur.
+- Contract-testable boundaries that don't require mocking.
 
-리팩토링 후보:
+Refactoring candidates:
 
-- 순환 의존, 거대 함수/클래스, 암묵적 전역 상태
-- 중복된 정책 분기, 산재한 validation, 불명확한 ownership
-- 테스트 격리를 방해하는 I/O 결합
-- 타입/스키마/도메인 모델 불일치
+- Circular dependency, large function/class, implicit global state.
+- Duplicated policy branches, scattered validation, unclear ownership.
+- I/O coupling that prevents test isolation.
+- Type/schema/domain model mismatch.
 
-질문해야 하는 경우:
+When to ask the user:
 
-- 변경 의도가 기존 아키텍처와 충돌한다.
-- 추상화 선택이 요구사항 대비 과도하거나 부족하다.
-- 데이터 일관성, 트랜잭션, 캐시 무효화, 권한 경계가 불명확하다.
-- "왜 이렇게 구현했는지"를 합리적으로 설명할 수 없다.
+- Change intent conflicts with existing architecture.
+- Abstraction choice seems excessive or insufficient for requirements.
+- Data consistency, transaction, cache invalidation, permission boundaries are unclear.
+- You cannot reasonably explain "why this was implemented this way."
