@@ -118,6 +118,7 @@ Monithub 레포지토리에서 기능 구현, 버그 수정, 문서화, 브랜�
 3. **이슈 우선** — `gh issue list` 또는 GitHub connector로 기존 이슈를 검색합니다.
 4. **없으면 생성** — 작업 전에 이슈를 만들고, 큰 작업은 서브 이슈로 나눕니다.
 5. **PR 연결** — PR 본문에 `Closes #subIssue`, `Related #parentIssue`를 넣습니다.
+6. **PR 메타데이터 설정** — assignee는 `@me`, 작업 유형별 label, repo별 project를 붙이고 reviewer는 요청하지 않습니다.
 
 #### 기대 효과
 

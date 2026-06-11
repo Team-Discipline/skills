@@ -160,6 +160,35 @@ Issue link rules:
 
 PRs may be draft when the change is exploratory, incomplete, documentation-only for review, or awaiting user confirmation.
 
+After creating or finding the PR, set PR metadata:
+
+1. Add assignee `@me`.
+2. Add a label matching the work type.
+3. Add the relevant GitHub Project when one exists.
+4. Do not request reviewers unless the user explicitly asks.
+
+Default labels:
+
+- `feat` -> `enhancement`
+- `fix` or `hotfix` -> `bug`
+- `docs` -> `documentation`
+- `refactor` -> `refactor` when available, otherwise `enhancement`
+- `chore`, `ci`, `test`, `style`, `perf` -> use the matching label when available, otherwise `enhancement`
+- dependency, package, or submodule updates -> `dependencies` when available, otherwise `enhancement`
+
+Default projects:
+
+- `Monithub/monithub-platform` -> `플랫폼`
+- `Team-Discipline/skills` -> `Monithub platform`
+
+If the repository has no relevant project or `gh pr edit --add-project` cannot find it, do not add an unrelated project. Report the missing project in the final response.
+
+Example:
+
+```bash
+gh pr edit <number> --repo Monithub/monithub-platform --add-assignee @me --add-label documentation --add-project "플랫폼"
+```
+
 ## API And Swagger Rule
 
 When backend API behavior changes:
@@ -179,6 +208,8 @@ Before final response:
 - Pre-deploy discussion is updated for temporary production-sensitive policy.
 - Tests or validation commands were run, or skipped with a reason.
 - PR body links issues correctly.
+- PR assignee, label, and project were set where available.
+- No reviewers were requested unless the user asked.
 - Unrelated dirty files remain unstaged.
 
 Report the issue, branch, commit, PR, and validation results concisely.
