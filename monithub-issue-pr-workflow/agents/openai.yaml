@@ -1,0 +1,7 @@
+interface:
+  display_name: "Monithub Issue PR Workflow"
+  short_description: "Issue-first Monithub PR workflow"
+  default_prompt: "Use $monithub-issue-pr-workflow before starting Monithub implementation, documentation, branch, commit, push, or PR work."
+
+policy:
+  allow_implicit_invocation: true
