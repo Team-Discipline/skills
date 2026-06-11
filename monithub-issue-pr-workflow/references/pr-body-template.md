@@ -13,6 +13,13 @@ Use this structure when creating a PR.
 Closes #<subIssue>
 Related #<parentIssue>
 
+## PR 메타데이터
+
+- Assignee: `@me`
+- Labels: `<work-type label>`
+- Project: `<repo default project>`
+- Reviewers: none unless requested
+
 ## 검증
 
 - `command`
