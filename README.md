@@ -90,6 +90,43 @@ AI Agent용 Skill 정의 저장소입니다. Skills는 특정 작업을 수행�
 - **도구 통합**: 기존 린트/테스트/타입체크를 자동 탐색하여 실행하고 결과를 리포트에 반영
 - **코드 수정 제로**: 절대 코드를 수정하지 않으므로 품질 검사가 안전하게 실행됨
 
+---
+
+### monithub-issue-pr-workflow
+
+#### 상세 설명
+
+Monithub 레포지토리에서 기능 구현, 버그 수정, 문서화, 브랜치 생성, 커밋, PR 생성 전에 **기존 GitHub 이슈를 먼저 찾고**, 없으면 새 이슈를 만든 뒤 작업을 진행하도록 강제하는 워크플로우입니다.
+
+큰 작업은 상위 이슈와 `[SubIssue]` 구조로 나누고, 구현 PR은 실제로 완료하는 서브 이슈에 `Closes #번호`, 상위 로드맵 이슈에는 `Related #번호`를 연결합니다. 또한 `docs/features/`, `docs/release/pre-deploy-discussions.md`, Swagger 문서 갱신 여부까지 함께 점검합니다.
+
+#### 언제 사용하면 좋은가
+
+| 상황 | 설명 |
+|------|------|
+| **Monithub 기능 구현 시작 전** | 기존 이슈 검색 또는 새 이슈 생성을 먼저 수행 |
+| **큰 기능을 쪼개야 할 때** | parent issue + `[SubIssue]` 구조로 구현 단위를 나눔 |
+| **문서화가 필요한 기능** | `docs/features/`와 pre-deploy 논의사항 갱신 여부 확인 |
+| **PR 생성 전** | PR base branch, 관련 이슈, `Closes`/`Related` 연결 확인 |
+| **API 변경 작업** | Swagger 문서와 예제 값 갱신 여부를 체크 |
+| **더러운 작업 트리에서 작업할 때** | unrelated dirty files를 건드리지 않도록 먼저 확인 |
+
+#### 어떻게 사용하는가
+
+1. **자동 감지** — Monithub 레포에서 구현/문서/PR 작업을 시작하면 활성화됩니다.
+2. **직접 호출** — `$monithub-issue-pr-workflow`를 명시해 사용할 수 있습니다.
+3. **이슈 우선** — `gh issue list` 또는 GitHub connector로 기존 이슈를 검색합니다.
+4. **없으면 생성** — 작업 전에 이슈를 만들고, 큰 작업은 서브 이슈로 나눕니다.
+5. **PR 연결** — PR 본문에 `Closes #subIssue`, `Related #parentIssue`를 넣습니다.
+
+#### 기대 효과
+
+- **작업 추적성 향상**: 모든 구현과 PR이 GitHub 이슈에 연결됨
+- **기획 누락 방지**: 큰 기능을 구현 전에 parent/sub issue로 쪼개 범위를 명확히 함
+- **문서 품질 유지**: 기능 문서, pre-deploy 논의, Swagger 갱신을 PR 전에 점검
+- **리뷰 효율화**: PR이 어떤 이슈를 완료하는지 명확해져 리뷰 범위가 줄어듦
+- **운영 리스크 감소**: 임시 정책과 production-readiness caveat를 문서에 남김
+
 ## Installation
 
 ```bash
@@ -103,6 +140,7 @@ npx skills add Team-Discipline/skills
 직접 호출할 수도 있습니다:
 - `커밋을 분할해줘` — git-commit-split 활성화
 - `코드 품질을 검사해줘` — quality-check 활성화
+- `$monithub-issue-pr-workflow` — Monithub 이슈/PR 워크플로우 활성화
 
 ## License
 
