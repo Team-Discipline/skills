@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monithub Feature Docs"
+  short_description: "Keep Monithub feature docs and ADRs current"
+  default_prompt: "Use $monithub-feature-docs to create or update Monithub feature documentation, ADRs, and pre-deploy notes."
