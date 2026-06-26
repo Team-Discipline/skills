@@ -1,0 +1,4 @@
+interface:
+  display_name: "Startup Launch Workflow"
+  short_description: "Turn startup launch ambiguity into Codex workflows"
+  default_prompt: "Use $startup-launch-workflow to turn this startup launch goal into a product, repo, QA, docs, and GTM execution loop."
