@@ -2,6 +2,18 @@
 
 Use this when adding a repeatable gate for landing page, brochure, or GTM copy.
 
+## Tool-First Pattern
+
+This skill includes reusable scripts:
+
+```bash
+node <skill>/scripts/copy-surface.mjs --source <file> --out .generated/natural-copy-surface.txt
+node <skill>/scripts/copy-gate.mjs --surface .generated/natural-copy-surface.txt
+node <skill>/scripts/copy-gate.mjs --source <file> --patina
+```
+
+Use them directly from the skill folder for one-off checks. If the target repository needs a permanent gate, copy the scripts into the repository's `scripts/` folder and wire them into package scripts or CI.
+
 ## Pattern From Monithub Homepage
 
 The Monithub homepage uses these script concepts:
@@ -14,7 +26,7 @@ The Monithub homepage uses these script concepts:
 6. Run Patina with Korean marketing profile.
 7. Fail the gate on banned phrases, high/critical audit warnings, or unsupported claims.
 
-Representative commands:
+Representative repository commands:
 
 ```bash
 npm run copy:generate

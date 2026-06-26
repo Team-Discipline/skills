@@ -7,7 +7,7 @@ description: Rewrite, review, or systematize Korean landing page, brochure, webs
 
 Use this skill to turn AI-generated or internally written marketing copy into Korean copy that sounds like a real team speaking to a real customer.
 
-This skill is based on the Monithub homepage copy workflow:
+This skill includes reusable scripts based on the Monithub homepage copy workflow:
 
 ```text
 structured copy source -> copy surface extraction -> language/story evaluation -> copy sanity checks -> patina gate -> human review
@@ -23,6 +23,41 @@ Do not merely make copy smoother. Check whether the copy:
 - preserves the page or brochure story arc;
 - stays short enough for the surface where it appears;
 - can be checked again with a repeatable gate.
+
+## Bundled Tools
+
+Prefer these scripts over manual review when the user is working in a codebase:
+
+```bash
+node <skill>/scripts/copy-surface.mjs --source <copy-source> --out .generated/natural-copy-surface.txt
+node <skill>/scripts/copy-gate.mjs --surface .generated/natural-copy-surface.txt
+node <skill>/scripts/copy-gate.mjs --source <copy-source> --patina
+```
+
+The scripts support JSON, JSONC, HTML, Markdown, and plain text sources.
+
+- `scripts/copy-surface.mjs`: extracts customer-facing strings into `path: text` copy surface format.
+- `scripts/copy-gate.mjs`: fails on AI-like tone, translationese, internal abstraction, unsupported hype, tense/adverb conflicts, long titles/CTAs/sentences, and repeated explanatory structures.
+- `scripts/copy-gate.mjs --patina`: additionally runs Patina when the target repo has `.patina.yaml` and `node_modules/.bin/patina`.
+
+When a target repository already has equivalent scripts, run the local repository scripts first. For Monithub homepage, use:
+
+```bash
+npm run copy:surface
+npm run copy:evaluate
+npm run copy:sanity
+npm run patina:gate
+```
+
+When the target repository does not have a copy QA gate and the user asks to install one, copy this skill's scripts into that repository's `scripts/` folder and add package scripts such as:
+
+```json
+{
+  "copy:surface": "node scripts/copy-surface.mjs",
+  "copy:gate": "node scripts/copy-gate.mjs --source src/content/site-copy.jsonc",
+  "copy:gate:patina": "node scripts/copy-gate.mjs --source src/content/site-copy.jsonc --patina"
+}
+```
 
 ## Workflow
 
@@ -45,7 +80,7 @@ Keep internal positioning words in strategy docs only. Rewrite customer-facing c
 
 When working in a repository, prefer a single structured copy source where one exists.
 
-For Monithub homepage, use the existing flow:
+For Monithub homepage, use the existing repository flow:
 
 ```bash
 npm run copy:surface
@@ -54,7 +89,7 @@ npm run copy:sanity
 npm run patina:gate
 ```
 
-If those scripts do not exist, manually create a copy surface with path + text pairs before reviewing. Do not review only the visible file diff if the rendered copy comes from JSON, JSONC, CMS data, generated TypeScript, or templates.
+If those scripts do not exist, run the bundled `scripts/copy-surface.mjs` on the relevant source files. Do not review only the visible file diff if the rendered copy comes from JSON, JSONC, CMS data, generated TypeScript, or templates.
 
 ### 3. Review with blocking rules
 
@@ -89,7 +124,7 @@ Use this rewrite order:
 3. Shorten long titles, CTAs, and sentences.
 4. Remove unsupported future promises.
 5. Keep necessary domain terms only where they reduce ambiguity.
-6. Re-run the copy gate or manually re-check the same rules.
+6. Re-run `scripts/copy-gate.mjs`, repository copy scripts, or Patina before finishing.
 
 ## References
 
@@ -127,4 +162,5 @@ Check:
 - The claim matches the current product capability.
 - Titles, buttons, and short UI surfaces are not overloaded.
 - The first viewport starts from a customer scene or pain.
+- The bundled scripts or equivalent repository scripts were run when source files are available.
 - Any reusable rule is captured in a checklist, prompt, script, or skill when the task repeats.
