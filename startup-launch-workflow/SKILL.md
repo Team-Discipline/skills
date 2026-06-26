@@ -79,7 +79,7 @@ Use this order unless the user asks for a narrower slice:
 5. Verify tests, build, lint, browser flow, permissions, console errors, and UI states where applicable.
 6. Check security-sensitive items: auth, authorization, validation, secrets, logs, data exposure, and API access.
 7. Update feature docs, API docs, Swagger examples, PR notes, or release notes when applicable.
-8. Translate the implemented feature into customer-facing messaging.
+8. Translate the implemented feature into customer-facing messaging. Use `natural-marketing-copy` when the copy must avoid AI-like tone, translationese, unsupported hype, or internal abstraction.
 9. Extract reusable instructions into AGENTS.md, a skill, checklist, prompt, or script.
 
 ### 4. Use references as needed
@@ -89,6 +89,8 @@ Load only the reference that matches the current work:
 - `references/bottleneck-playbook.md`: use when turning a vague startup story into concrete bottlenecks, conflict, resolution, and result.
 - `references/checklists.md`: use when preparing execution, launch-readiness, security, documentation, browser QA, or GTM checks.
 - `references/prompts.md`: use when the user needs reusable prompts for product definition, implementation planning, PR readiness, QA, or GTM conversion.
+
+For landing page, brochure, CTA, email, or website copy polish, route to `natural-marketing-copy` instead of keeping copy rules inside this umbrella workflow.
 
 ## Output Shape
 

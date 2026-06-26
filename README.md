@@ -127,6 +127,42 @@ AI Agent용 Skill 정의 저장소입니다. Skills는 특정 작업을 수행�
 
 ---
 
+### natural-marketing-copy
+
+#### 상세 설명
+
+한국어 랜딩 페이지, 브로슈어, CTA, 이메일, GTM 문구에서 **AI 티**, 번역투, 내부 추상어, 과장된 SaaS 표현을 제거하는 카피 정제 워크플로우입니다.
+
+Monithub 홈페이지의 `copy:surface`, `copy:evaluate`, `copy:sanity`, `patina:gate` 흐름을 일반화해, 문구를 감으로 다듬는 대신 고객 장면, 스토리 아크, 금지 표현, 문장 길이, claim 안정성을 반복 검증 가능한 기준으로 점검합니다.
+
+#### 언제 사용하면 좋은가
+
+| 상황 | 설명 |
+|------|------|
+| **AI 티 제거** | 생성된 마케팅 문구가 번역투나 AI SaaS 문장처럼 읽힐 때 |
+| **랜딩 페이지/브로슈어 카피** | hero, section, CTA, pricing/demo 문구를 고객 언어로 다듬을 때 |
+| **GTM 메시지 변환** | 제품 기능 설명을 고객 가치, Before/After, 이메일 문구로 바꿀 때 |
+| **copy QA gate 구축** | structured copy source, copy surface, sanity/eval/patina gate를 만들 때 |
+| **claim 검증** | 자동 해결, 완전한 RCA, 무제한 같은 과장 claim을 막아야 할 때 |
+
+#### 어떻게 사용하는가
+
+1. **surface 식별** — hero, section, brochure, CTA, email, metadata 중 어디에 쓰이는 문구인지 먼저 구분합니다.
+2. **copy surface 추출** — 가능하면 JSON/JSONC/CMS/source copy에서 path + text 형태로 문구를 뽑습니다.
+3. **차단 규칙 적용** — 내부 추상어, 번역투, 과장 표현, 시간 부사 충돌, 반복 설명 구조를 찾습니다.
+4. **스토리 아크 확인** — 고객 장면, 현재 답답함, 다음 행동, 남는 결과, CTA가 이어지는지 봅니다.
+5. **재검증** — `copy:evaluate`, `copy:sanity`, `patina:gate` 또는 수동 체크리스트로 다시 확인합니다.
+
+#### 기대 효과
+
+- **AI풍 문장 감소**: "제공합니다", "활용 가능합니다", "혁신적인" 같은 생성형 문구를 줄임
+- **고객 언어 강화**: 내부 전략어 대신 고객이 겪는 장면과 행동으로 표현
+- **과장 claim 방지**: 실제 제품 상태와 맞지 않는 자동화/완전 해결 표현을 차단
+- **브로슈어 흐름 개선**: 기능 나열이 아니라 문제 → 탐색 → 결과 → 행동 흐름으로 정리
+- **반복 가능한 카피 QA**: 감각 의존이 아니라 스크립트와 체크리스트로 재검증 가능
+
+---
+
 ### monithub-issue-pr-workflow
 
 #### 상세 설명
@@ -213,6 +249,7 @@ npx skills add Team-Discipline/skills
 - `커밋을 분할해줘` — git-commit-split 활성화
 - `코드 품질을 검사해줘` — quality-check 활성화
 - `$startup-launch-workflow` — 창업/런칭 병목을 Codex 실행 루프로 정리
+- `$natural-marketing-copy` — 랜딩 페이지, 브로슈어, CTA 문구의 AI 티 제거
 - `$monithub-issue-pr-workflow` — Monithub 이슈/PR 워크플로우 활성화
 - `$monithub-feature-docs` — Monithub 기능 문서, ADR, pre-deploy 논의사항 갱신
 

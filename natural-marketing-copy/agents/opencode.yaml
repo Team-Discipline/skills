@@ -1,0 +1,4 @@
+interface:
+  display_name: "Natural Marketing Copy"
+  short_description: "Make Korean marketing copy sound human"
+  default_prompt: "Use $natural-marketing-copy to rewrite this landing page, brochure, or GTM copy so it sounds natural and not AI-generated."
